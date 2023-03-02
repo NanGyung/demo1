@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Title</title>
+  </head>
+  <body>
+    <ul>
+      <li><a href="#" id="menu1">부산맛집</a></li>
+    </ul>
+    <script type="module">
+      import { ajax } from '../js/common.js';
+
+      const $menu1 = document.getElementById('menu1');
+      const list = (res) => {
+        if (res.getFoodKr.header.code == '00') {
+          const items = res.getFoodKr.item;
+          items.forEach((item) => {
+            const keys = Object.keys(item);
+            keys.forEach((key) => console.log(`${key} - ${item[key]}`));
+          });
+        } else {
+          new Error(`${res.getFoodKr.header.message}`);
+        }
+      };
+
+      $menu1.addEventListener('click', (e) => {
+        e.preventDefault(); //기본이벤트 막기
+
+        const url = '/pubData/restaurant';
+        ajax
+          .get(url)
+          .then((res) => res.json())
+          .then((res) => {
+            console.log(res);
+            list(res);
+          })
+          .catch((err) => console.error(err.message));
+      });
+    </script>
+  </body>
+</html>

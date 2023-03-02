@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>사업자번호 확인</title>
+  <style>
+    .hidden { display: none}
+
+  </style>
+</head>
+<body>
+<form action="#">
+  <p class="item item1"><label for="businessNm">사업자번호</label><input type="text" id="businessNm"><button id="chkBtn" type="button">확인</button></p>
+  <p class="item item2 hidden">
+    <label for="start_dt">개업일자</label><input type="text" id="start_dt">
+    <label for="p_nm">대표자명</label><input type="text" id="p_nm">
+    <label for="b_nm">상호명</label><input type="text" id="b_nm">
+    <button id="chkBtn2" type="button">확인</button>
+  </p>
+</form>
+<script type="module">
+  import {ajax} from '/js/common.js';
+  //사업자상태확인
+  const $chkBtn = document.getElementById('chkBtn');
+  $chkBtn.addEventListener('click',businessNumberChk_h,false);
+
+  //사업자진위확인
+  const $chkBtn2 = document.getElementById('chkBtn2');
+  $chkBtn2.addEventListener('click',businessTrulyChk_h,false);
+  const businessTrulyRequestPram = {};
+
+
+  //사업자 상태확인
+  function businessNumberChk_h(e){
+    const key = 'bJ0AcEWnYARdHMe24EsPd77ralP%2BiRWLuhIeWgoIBgM%2F4dqlAgbS%2FilwgSiZkbkL9ojCBQHuEZI2TtoMqYzRhA%3D%3D';
+    const returnType = 'JSON';
+    const url =  `http://api.odcloud.kr/api/nts-businessman/v1/status?serviceKey=${key}&returnType=${returnType}`;
+    const businessNm = document.getElementById('businessNm');
+    //const payLoad = JSON.parse(`{"b_no": [${businessNm.value} ] }`);
+    //const payLoad = { "b_no": [businessNm.value] };
+    const payLoad = { "b_no": [businessNm.value] };
+    //1)상태결과
+    const businessStatusChk = (res) => {
+      console.log(res);
+      if(res.status_code == 'OK'){
+        switch(res.data[0].b_stt_cd){ //납세자 상태
+          case "01": //계속사업자
+            console.log('계속');
+            document.querySelector('.item.item2').classList.remove('hidden');
+
+            //진위확인 파라미터
+            businessTrulyRequestPram.b_no = res.data[0].b_no;  //사업자 등록번호
+
+            break;
+          case "02": //휴업자
+            break;
+          case "03": //폐업자
+            break;
+          default :
+            throw new Error(`${res.data[0].tax_type}`);
+        }
+      }else{
+        throw new Error(`${res.description}`);
+      }
+    }
+
+    ajax.post(url,payLoad)
+      .then(res=>res.json())
+      .then(res=>businessStatusChk(res))
+      .catch(err=>console.log(err.message));
+  }
+
+  //사업자 진위확인
+  function businessTrulyChk_h(e) {
+    const key = 'bJ0AcEWnYARdHMe24EsPd77ralP%2BiRWLuhIeWgoIBgM%2F4dqlAgbS%2FilwgSiZkbkL9ojCBQHuEZI2TtoMqYzRhA%3D%3D';
+    const returnType = 'JSON';
+    const url =  `http://api.odcloud.kr/api/nts-businessman/v1/validate?serviceKey=${key}&returnType=${returnType}`;
+    const $start_dt = document.getElementById('start_dt');
+    const $p_nm = document.getElementById('p_nm');
+    const $b_nm = document.getElementById('b_nm');
+
+    const payLoad = {
+      businesses : [
+        { ...businessTrulyRequestPram,
+          start_dt : $start_dt.value,
+          p_nm : $p_nm.value,
+          b_nm : $b_nm.value
+        }
+      ]
+    };
+    console.log(payLoad);
+    const businessStatusChk = res => {
+      console.log(res);
+      if(res.status_code == 'OK'){
+        switch(res.data[0].valid){
+          case "01":  //Valid  유효
+            break;
+          case "02":  //Invalid
+            throw new Error(`${res.data[0].valid_msg}`);
+            break;
+        }
+      }else{
+        throw new Error(`${res.description}`);
+      }
+    }
+    ajax.post(url,payLoad)
+      .then(res=>res.json())
+      .then(res=>businessStatusChk(res))
+      .catch(err=>console.log(err.message));
+
+  }
+</script>
+</body>
+</html>
